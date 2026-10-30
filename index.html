@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HOA Official Ballot</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background-color: #f8fafc;
+        color: #1e293b;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+      }
+      .card {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+        max-width: 550px;
+        width: 100%;
+        padding: 28px;
+        border: 1px solid #e2e8f0;
+      }
+      h2 {
+        margin-top: 0;
+        color: #0f172a;
+        font-size: 1.4rem;
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 10px;
+      }
+      .step { display: none; }
+      .step.active { display: block; }
+      .form-group { margin-bottom: 18px; }
+      label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 6px;
+        font-size: 0.9rem;
+      }
+      select, input[type="text"], input[type="email"], input[type="tel"], textarea {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        box-sizing: border-box;
+        font-size: 0.95rem;
+      }
+      select:focus, input:focus, textarea:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+      }
+      select:disabled { background-color: #f1f5f9; cursor: not-allowed; }
+      .radio-group {
+        display: flex;
+        gap: 15px;
+        margin-top: 8px;
+      }
+      .radio-label {
+        flex: 1;
+        border: 1px solid #cbd5e1;
+        padding: 12px;
+        border-radius: 6px;
+        text-align: center;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.2s;
+      }
+      .radio-label:hover { background-color: #f1f5f9; }
+      input[type="radio"] { display: none; }
+      input[type="radio"]:checked + .radio-label {
+        border-color: #2563eb;
+        background-color: #eff6ff;
+        color: #1d4ed8;
+      }
+      .btn {
+        background-color: #2563eb;
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        width: 100%;
+        margin-top: 15px;
+      }
+      .btn:hover { background-color: #1d4ed8; }
+      .btn:disabled { background-color: #94a3b8; cursor: not-allowed; }
+      .btn-secondary {
+        background-color: #e2e8f0;
+        color: #475569;
+        margin-top: 8px;
+      }
+      .btn-secondary:hover { background-color: #cbd5e1; }
+      .error { color: #dc2626; font-size: 0.85rem; margin-top: 5px; }
+      .hidden { display: none; }
+      .summary-box {
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        padding: 12px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+
+      <!-- STEP 1: Address Selection -->
+      <div id="step1" class="step active">
+        <h2>HOA Official Ballot</h2>
+        <p>Please select your street and house number to begin.</p>
+
+        <div class="form-group">
+          <label for="streetSelect">1. Select Street Name</label>
+          <select id="streetSelect" onchange="onStreetChange()">
+            <option value="">-- Loading streets... --</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="addressSelect">2. Select House Number</label>
+          <select id="addressSelect" disabled>
+            <option value="">-- First choose a street --</option>
+          </select>
+        </div>
+
+        <button type="button" class="btn" onclick="goToStep2()">Verify Address</button>
+      </div>
+
+      <!-- STEP 2: Resident Information -->
+      <div id="step2" class="step">
+        <h2>Verify Identity</h2>
+        <div class="summary-box">
+          <strong>Selected Address:</strong> <span id="displayAddress"></span>
+        </div>
+        <form id="voterForm" onsubmit="return false;">
+          <div class="form-group">
+            <label for="fullName">Full Name</label>
+            <input type="text" id="fullName" required>
+          </div>
+          <div class="form-group">
+            <label for="email">Email Address (you will get a receipt)</label>
+            <input type="email" id="email" required>
+          </div>
+          <div class="form-group">
+            <label for="phone">Phone Number</label>
+            <input type="tel" id="phone" required>
+          </div>
+          <button type="button" class="btn" onclick="goToStep3()">Continue to Ballot</button>
+          <button type="button" class="btn btn-secondary" onclick="goToStep1()">Back</button>
+        </form>
+      </div>
+
+      <!-- STEP 3: Voting & Feedback -->
+      <div id="step3" class="step">
+        <h2>Cast Your Vote</h2>
+        <p>Please indicate your approval stance on the proposed Covenants, Bylaws, and Rules &amp; Regulations changes.</p>
+
+        <div class="form-group">
+          <label>Your Vote</label>
+          <div class="radio-group">
+            <label>
+              <input type="radio" name="voteOption" value="Approve" onchange="toggleFeedback(false)">
+              <div class="radio-label">Approve</div>
+            </label>
+            <label>
+              <input type="radio" name="voteOption" value="Disapprove" onchange="toggleFeedback(true)">
+              <div class="radio-label">Disapprove</div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Optional Feedback Section for 'Disapprove' -->
+        <div id="feedbackContainer" class="form-group hidden">
+          <label for="feedbackText">Feedback / Concerns (Optional)</label>
+          <textarea id="feedbackText" rows="4" placeholder="Please let the board know your main reasons or concerns..."></textarea>
+        </div>
+
+        <button type="button" id="submitBtn" class="btn" onclick="submitBallot()">Submit Final Vote</button>
+        <button type="button" class="btn btn-secondary" onclick="goToStep(2)">Back</button>
+        <div id="statusMsg" class="error"></div>
+      </div>
+
+      <!-- STEP 4: Confirmation Screen -->
+      <div id="step4" class="step">
+        <h2 style="color: #16a34a;">Vote Successfully Recorded</h2>
+        <p>Thank you for participating! Your response has been securely registered for your property address, and an email confirmation has been sent to your provided email address. You may now close this page.</p>
+      </div>
+
+    </div>
+
+    <script>
+      // ===== PASTE YOUR /exec URL HERE =====
+      const API_URL = 'https://script.google.com/macros/s/AKfycbwLXlcoegHuYCvXM07PgbBD9rQRVFqwxpiWyVqxtgtXqHtwcNrSYFk_sVfQoYAKuZk/exec';
+
+      let globalStreetData = {};
+      let selectedAddress = '';
+      let deviceFingerprint = '';
+      let formInProgress = false;
+
+      // Warn before refreshing/leaving mid-ballot
+      window.addEventListener('beforeunload', function(e) {
+        if (formInProgress) {
+          e.preventDefault();
+          e.returnValue = '';
+        }
+      });
+
+      // Persistent local device token, used if FingerprintJS is slow or blocked
+      function generateFallbackFingerprint() {
+        let visitorId = '';
+        try {
+          visitorId = localStorage.getItem('hoa_device_id');
+          if (!visitorId) {
+            visitorId = 'fp_' + Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
+            localStorage.setItem('hoa_device_id', visitorId);
+          }
+        } catch (e) {
+          visitorId = 'fp_' + Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
+        }
+        return visitorId;
+      }
+
+      function startApp() {
+        deviceFingerprint = generateFallbackFingerprint();
+        loadStreets();
+        loadFingerprintJS();
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', startApp);
+      } else {
+        startApp();
+      }
+
+      function loadFingerprintJS() {
+        const s = document.createElement('script');
+        s.src = 'https://openfpcdn.io/fingerprintjs/v3/umd.min.js';
+        s.onload = function() {
+          FingerprintJS.load()
+            .then(fp => fp.get())
+            .then(result => {
+              if (result && result.visitorId) deviceFingerprint = result.visitorId;
+            })
+            .catch(err => console.log('FingerprintJS error:', err));
+        };
+        s.onerror = function() {
+          console.log('FingerprintJS blocked; using fallback ID');
+        };
+        document.head.appendChild(s);
+      }
+
+      // Load streets from Apps Script (no Google cookies are sent)
+      function loadStreets() {
+        fetch(API_URL + '?action=streets', { credentials: 'omit' })
+          .then(res => res.json())
+          .then(initStreetDropdown)
+          .catch(err => {
+            console.error('Error loading streets:', err);
+            document.getElementById('streetSelect').innerHTML =
+              '<option value="">Error loading streets. Please refresh the page.</option>';
+          });
+      }
+
+      function initStreetDropdown(data) {
+        globalStreetData = data || {};
+        const streetSel = document.getElementById('streetSelect');
+        streetSel.innerHTML = '<option value="">-- Choose your street --</option>';
+
+        const streets = Object.keys(globalStreetData).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+
+        if (streets.length === 0) {
+          streetSel.innerHTML = '<option value="">No unvoted addresses available</option>';
+          return;
+        }
+
+        streets.forEach(street => {
+          const opt = document.createElement('option');
+          opt.value = street;
+          opt.textContent = street;
+          streetSel.appendChild(opt);
+        });
+      }
+
+      function onStreetChange() {
+        const streetSel = document.getElementById('streetSelect');
+        const addressSel = document.getElementById('addressSelect');
+        const chosenStreet = streetSel.value;
+
+        addressSel.innerHTML = '<option value="">-- Choose your house number --</option>';
+
+        if (!chosenStreet || !globalStreetData[chosenStreet]) {
+          addressSel.disabled = true;
+          return;
+        }
+
+        globalStreetData[chosenStreet].forEach(item => {
+          const opt = document.createElement('option');
+          opt.value = item.full;
+          opt.textContent = item.number;
+          addressSel.appendChild(opt);
+        });
+
+        addressSel.disabled = false;
+      }
+
+      function goToStep(stepNum) {
+        document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+        document.getElementById('step' + stepNum).classList.add('active');
+        window.scrollTo(0, 0);
+      }
+
+      function goToStep1() { goToStep(1); }
+
+      function goToStep2() {
+        const addrSel = document.getElementById('addressSelect');
+        if (!addrSel.value) {
+          alert('Please select both a street and house number.');
+          return;
+        }
+        selectedAddress = addrSel.value;
+        document.getElementById('displayAddress').textContent = selectedAddress;
+        formInProgress = true;
+        goToStep(2);
+      }
+
+      function goToStep3() {
+        const name = document.getElementById('fullName').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const phone = document.getElementById('phone').value.trim();
+
+        if (!name || !email || !phone) {
+          alert('Please complete all contact details.');
+          return;
+        }
+        goToStep(3);
+      }
+
+      function toggleFeedback(show) {
+        const fbBox = document.getElementById('feedbackContainer');
+        if (show) {
+          fbBox.classList.remove('hidden');
+        } else {
+          fbBox.classList.add('hidden');
+          document.getElementById('feedbackText').value = '';
+        }
+      }
+
+      function submitBallot() {
+        const voteOpt = document.querySelector('input[name="voteOption"]:checked');
+        if (!voteOpt) {
+          alert('Please select either Approve or Disapprove.');
+          return;
+        }
+
+        const submitBtn = document.getElementById('submitBtn');
+        const statusMsg = document.getElementById('statusMsg');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting...';
+        statusMsg.textContent = '';
+
+        const payload = {
+          address: selectedAddress,
+          name: document.getElementById('fullName').value.trim(),
+          email: document.getElementById('email').value.trim(),
+          phone: document.getElementById('phone').value.trim(),
+          vote: voteOpt.value,
+          feedback: document.getElementById('feedbackText').value.trim(),
+          fingerprint: deviceFingerprint || generateFallbackFingerprint()
+        };
+
+        // text/plain avoids a CORS preflight, which Apps Script doesn't support
+        fetch(API_URL, {
+          method: 'POST',
+	  credentials: 'omit',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        })
+          .then(res => res.json())
+          .then(res => {
+            if (res.success) {
+              formInProgress = false;
+              goToStep(4);
+            } else {
+              statusMsg.textContent = res.message || 'An error occurred.';
+              submitBtn.disabled = false;
+              submitBtn.textContent = 'Submit Final Vote';
+            }
+          })
+          .catch(err => {
+            statusMsg.textContent = 'Could not reach the server. Check your connection and try again.';
+            console.error(err);
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit Final Vote';
+          });
+      }
+    </script>
+  </body>
+</html>
