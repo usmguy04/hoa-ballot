@@ -178,7 +178,7 @@
         <!-- Optional Feedback Section for 'Disapprove' -->
         <div id="feedbackContainer" class="form-group hidden">
           <label for="feedbackText">Feedback / Concerns (Optional)</label>
-          <textarea id="feedbackText" rows="4" placeholder="Please let the board know your main reasons or concerns..."></textarea>
+          <textarea id="feedbackText" rows="4" maxlength="1000" placeholder="Please let the board know your main reasons or concerns..."></textarea>
         </div>
 
         <button type="button" id="submitBtn" class="btn" onclick="submitBallot()">Submit Final Vote</button>
@@ -255,10 +255,44 @@
         document.head.appendChild(s);
       }
 
-      // Load streets from Apps Script (no Google cookies are sent)
+      // Calls the Apps Script API by loading it as a <script> tag (JSONP).
+      // This avoids the CORS blocking that fetch() runs into.
+      function callApi(params) {
+        return new Promise(function(resolve, reject) {
+          const cbName = 'hoaCb_' + Date.now() + '_' + Math.floor(Math.random() * 1e6);
+          const script = document.createElement('script');
+          const timer = setTimeout(function() {
+            cleanup();
+            reject(new Error('Request timed out'));
+          }, 30000);
+
+          function cleanup() {
+            clearTimeout(timer);
+            try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
+            if (script.parentNode) script.parentNode.removeChild(script);
+          }
+
+          window[cbName] = function(data) {
+            cleanup();
+            resolve(data);
+          };
+
+          const query = Object.keys(params)
+            .map(k => encodeURIComponent(k) + '=' + encodeURIComponent(params[k]))
+            .join('&');
+
+          script.src = API_URL + '?' + query + '&callback=' + cbName;
+          script.referrerPolicy = 'no-referrer';
+          script.onerror = function() {
+            cleanup();
+            reject(new Error('Could not reach the server'));
+          };
+          document.body.appendChild(script);
+        });
+      }
+
       function loadStreets() {
-        fetch(API_URL + '?action=streets', { credentials: 'omit' })
-          .then(res => res.json())
+        callApi({ action: 'streets' })
           .then(initStreetDropdown)
           .catch(err => {
             console.error('Error loading streets:', err);
@@ -374,20 +408,13 @@
           fingerprint: deviceFingerprint || generateFallbackFingerprint()
         };
 
-        // text/plain avoids a CORS preflight, which Apps Script doesn't support
-        fetch(API_URL, {
-          method: 'POST',
-	  credentials: 'omit',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(payload)
-        })
-          .then(res => res.json())
+        callApi({ action: 'vote', data: JSON.stringify(payload) })
           .then(res => {
-            if (res.success) {
+            if (res && res.success) {
               formInProgress = false;
               goToStep(4);
             } else {
-              statusMsg.textContent = res.message || 'An error occurred.';
+              statusMsg.textContent = (res && res.message) || 'An error occurred.';
               submitBtn.disabled = false;
               submitBtn.textContent = 'Submit Final Vote';
             }
